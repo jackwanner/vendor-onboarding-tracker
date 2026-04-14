@@ -193,6 +193,7 @@
         <th>W-9</th>
         <th>Contract</th>
         <th>Notes</th>
+        <th>Files</th>
         <th>Last Edited</th>
         <th></th>
       </tr></thead>
@@ -231,6 +232,10 @@
         <label>COI Expiration Date</label>
         <input type="date" id="f-coi-exp" />
       </div>
+      <div class="form-group">
+        <label>COI File Link <span style="color:var(--muted);font-weight:400">(Dropbox, Drive, etc.)</span></label>
+        <input type="text" id="f-coi-link" placeholder="https://…" />
+      </div>
 
       <div class="section-label">W-9 / Tax Form</div>
       <div class="form-group">
@@ -242,6 +247,10 @@
         <label>W-9 Date Received</label>
         <input type="date" id="f-w9-date" />
       </div>
+      <div class="form-group">
+        <label>W-9 File Link <span style="color:var(--muted);font-weight:400">(Dropbox, Drive, etc.)</span></label>
+        <input type="text" id="f-w9-link" placeholder="https://…" />
+      </div>
 
       <div class="section-label">Contract / Agreement</div>
       <div class="form-group">
@@ -252,6 +261,10 @@
       <div class="form-group">
         <label>Contract Date Received</label>
         <input type="date" id="f-contract-date" />
+      </div>
+      <div class="form-group">
+        <label>Contract File Link <span style="color:var(--muted);font-weight:400">(Dropbox, Drive, etc.)</span></label>
+        <input type="text" id="f-contract-link" placeholder="https://…" />
       </div>
 
       <div class="section-label">Notes</div>
@@ -383,6 +396,7 @@
         <td>${w9Badge}</td>
         <td>${ctBadge}</td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8rem;color:var(--muted)">${esc(f['Notes']||'')}</td>
+        <td style="white-space:nowrap">${fileLinks(f)}</td>
         <td>${edited}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-outline btn-sm" onclick="openEdit('${r.id}')">Edit</button>
@@ -403,6 +417,21 @@
     return received
       ? `<span class="badge badge-ok">✔ Received</span>`
       : `<span class="badge badge-missing">✗ Missing</span>`;
+  }
+  function fileLinks(f) {
+    const links = [
+      { label: 'COI', url: f['COI Link'] },
+      { label: 'W-9', url: f['W9 Link'] },
+      { label: 'Contract', url: f['Contract Link'] },
+    ].filter(l => l.url);
+    if (!links.length) return '<span style="color:var(--muted);font-size:.75rem">—</span>';
+    return links.map(l =>
+      `<a href="${esc(l.url)}" target="_blank" rel="noopener"
+        style="display:inline-flex;align-items:center;gap:3px;font-size:.75rem;font-weight:600;
+               color:var(--brand);text-decoration:none;background:var(--brand-light);
+               border-radius:5px;padding:2px 7px;margin-right:3px;"
+        title="${esc(l.url)}">🔗 ${l.label}</a>`
+    ).join('');
   }
 
   // ── MODAL ─────────────────────────────────────────────────
@@ -426,9 +455,12 @@
     id('f-coi-exp').value      = f['COI Expiration Date'] || '';
     id('f-w9').checked         = !!f['W9 Received'];
     id('f-w9-date').value      = f['W9 Date Received'] || '';
-    id('f-contract').checked   = !!f['Contract Received'];
-    id('f-contract-date').value= f['Contract Date Received'] || '';
-    id('f-notes').value        = f['Notes'] || '';
+    id('f-contract').checked    = !!f['Contract Received'];
+    id('f-contract-date').value = f['Contract Date Received'] || '';
+    id('f-coi-link').value      = f['COI Link'] || '';
+    id('f-w9-link').value       = f['W9 Link'] || '';
+    id('f-contract-link').value = f['Contract Link'] || '';
+    id('f-notes').value         = f['Notes'] || '';
     showOverlay();
   }
   function showOverlay() {
@@ -437,7 +469,7 @@
   }
   function closeModal() { id('modal-overlay').classList.remove('open'); }
   function clearForm() {
-    ['f-name','f-coi-exp','f-w9-date','f-contract-date','f-notes'].forEach(x => id(x).value = '');
+    ['f-name','f-coi-exp','f-coi-link','f-w9-date','f-w9-link','f-contract-date','f-contract-link','f-notes'].forEach(x => id(x).value = '');
     ['f-coi','f-w9','f-contract'].forEach(x => id(x).checked = false);
   }
   function tog(fid) { id(fid).checked = !id(fid).checked; }
@@ -461,12 +493,18 @@
       'Last Edited By': editor,
       'Last Edited Date': now,
     };
-    const coiExp = id('f-coi-exp').value;
-    const w9Date = id('f-w9-date').value;
-    const ctDate = id('f-contract-date').value;
-    if (coiExp) fields['COI Expiration Date'] = coiExp;
-    if (w9Date) fields['W9 Date Received']    = w9Date;
-    if (ctDate) fields['Contract Date Received'] = ctDate;
+    const coiExp     = id('f-coi-exp').value;
+    const w9Date     = id('f-w9-date').value;
+    const ctDate     = id('f-contract-date').value;
+    const coiLink    = id('f-coi-link').value.trim();
+    const w9Link     = id('f-w9-link').value.trim();
+    const ctLink     = id('f-contract-link').value.trim();
+    if (coiExp)  fields['COI Expiration Date']   = coiExp;
+    if (w9Date)  fields['W9 Date Received']       = w9Date;
+    if (ctDate)  fields['Contract Date Received'] = ctDate;
+    fields['COI Link']      = coiLink || null;
+    fields['W9 Link']       = w9Link  || null;
+    fields['Contract Link'] = ctLink  || null;
 
     const btn = id('save-btn');
     btn.disabled = true; btn.textContent = 'Saving…';
@@ -506,7 +544,7 @@
   // ── EXPORT CSV ────────────────────────────────────────────
   function exportCSV() {
     if (!records.length) { toast('No data to export.'); return; }
-    const cols = ['Vendor Name','COI Received','COI Expiration Date','W9 Received','W9 Date Received','Contract Received','Contract Date Received','Notes','Last Edited By','Last Edited Date'];
+    const cols = ['Vendor Name','COI Received','COI Expiration Date','COI Link','W9 Received','W9 Date Received','W9 Link','Contract Received','Contract Date Received','Contract Link','Notes','Last Edited By','Last Edited Date'];
     const rows = [cols.join(',')];
     records.forEach(r => {
       rows.push(cols.map(c => {
