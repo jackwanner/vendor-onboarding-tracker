@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vendor Onboarding Tracker</title>
+  <style>
+    :root {
+      --brand: #1a56db;
+      --brand-light: #e8effd;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --warn: #d97706;
+      --warn-light: #fffbeb;
+      --ok: #16a34a;
+      --ok-light: #f0fdf4;
+      --neutral: #6b7280;
+      --neutral-light: #f9fafb;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: var(--text); min-height: 100vh; }
+
+    /* ─── SETUP SCREEN ─── */
+    #setup-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 2rem;
+    }
+    .setup-card {
+      background: white; border-radius: 16px; padding: 2.5rem;
+      max-width: 520px; width: 100%; box-shadow: var(--shadow-lg);
+    }
+    .setup-card .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
+    .setup-card .logo .icon {
+      width: 44px; height: 44px; background: var(--brand); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .setup-card h1 { font-size: 1.5rem; font-weight: 700; }
+    .setup-card .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
+    .setup-divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+    .setup-section { margin-bottom: 1.25rem; }
+    .setup-section label { display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.4rem; }
+    .setup-section input {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 0.6rem 0.85rem; font-size: 0.9rem; outline: none; transition: border 0.2s;
+    }
+    .setup-section input:focus { border-color: var(--brand); }
+    .setup-section .hint { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.35rem; }
+    .setup-section .hint a { color: var(--brand); }
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      background: var(--brand); color: white; border: none; border-radius: 8px;
+      padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s; width: 100%; margin-top: 0.5rem;
+    }
+    .btn-primary:hover { background: #1648c4; }
+    .btn-primary:disabled { background: #93aedd; cursor: not-allowed; }
+    .setup-note {
+      background: var(--brand-light); border-radius: 8px; padding: 0.85rem 1rem;
+      font-size: 0.82rem; color: #1e40af; margin-top: 1rem; line-height: 1.5;
+    }
+    .setup-note strong { display: block; margin-bottom: 0.35rem; }
+    .setup-note code {
+      background: #c7d9f8; border-radius: 4px; padding: 1px 5px;
+      font-family: monospace; font-size: 0.8rem;
+    }
+    .setup-error {
+      background: var(--danger-light); border: 1px solid #fca5a5; border-radius: 8px;
+      padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--danger);
+      margin-top: 0.75rem; display: none;
+    }
+
+    /* ─── MAIN APP ─── */
+    #app { display: none; }
+    .topbar {
+      background: white; border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem; height: 60px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-logo {
+      width: 34px; height: 34px; background: var(--brand); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+    }
+    .topbar-title { font-size: 1.05rem; font-weight: 700; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .user-badge {
+      display: flex; align-items: center; gap: 7px; background: var(--neutral-light);
+      border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px;
+      font-size: 0.82rem; cursor: pointer;
+    }
+    .user-badge .dot { width: 8px; height: 8px; background: var(--ok); border-radius: 50%; }
+
+    .main-content { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+
+    /* ─── STATS ─── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+      background: white; border-radius: 12px; padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px;
+    }
+    .stat-card .stat-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 700; }
+    .stat-card .stat-sub { font-size: 0.78rem; color: var(--text-muted); }
+    .stat-danger .stat-value { color: var(--danger); }
+    .stat-warn .stat-value { color: var(--warn); }
+    .stat-ok .stat-value { color: var(--ok); }
+
+    /* ─── TOOLBAR ─── */
+    .toolbar {
+      background: white; border-radius: 12px; padding: 1rem 1.25rem;
+      display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;
+      box-shadow: var(--shadow); flex-wrap: wrap;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap input {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 0.55rem 0.85rem 0.55rem 2.2rem; font-size: 0.875rem; outline: none;
+    }
+    .search-wrap input:focus { border-color: var(--brand); }
+    .search-icon {
+      position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 14px;
+    }
+    .filter-select {
+      border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 0.55rem 0.85rem; font-size: 0.875rem; outline: none;
+      background: white; cursor: pointer;
+    }
+    .filter-select:focus { border-color: var(--brand); }
+    .btn-add {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--brand); color: white; border: none; border-radius: 8px;
+      padding: 0.55rem 1rem; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: background 0.2s;
+    }
+    .btn-add:hover { background: #1648c4; }
+    .btn-refresh {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: white; color: var(--text); border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 0.55rem 1rem; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-refresh:hover { border-color: var(--brand); color: var(--brand); }
+    .btn-refresh.spinning svg { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── TABLE ─── */
+    .table-wrap { background: white; border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+    .table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .table-wrap thead { background: var(--neutral-light); }
+    .table-wrap th {
+      text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .table-wrap td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .table-wrap tr:last-child td { border-bottom: none; }
+    .table-wrap tbody tr:hover { background: var(--neutral-light); }
+    .vendor-name { font-weight: 600; color: var(--text); }
+
+    /* ─── BADGES ─── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      border-radius: 20px; padding: 3px 10px; font-size: 0.75rem; font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-ok { background: var(--ok-light); color: var(--ok); }
+    .badge-missing { background: #f3f4f6; color: var(--neutral); }
+    .badge-danger { background: var(--danger-light); color: var(--danger); }
+    .badge-warn { background: var(--warn-light); color: var(--warn); }
+
+    .coi-date { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ─── ACTION BTNS ─── */
+    .btn-edit {
+      background: var(--brand-light); color: var(--brand);
+      border: none; border-radius: 6px; padding: 4px 12px;
+      font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-edit:hover { background: #c7d9f8; }
+    .btn-delete {
+      background: var(--danger-light); color: var(--danger);
+      border: none; border-radius: 6px; padding: 4px 12px;
+      font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-left: 4px;
+    }
+    .btn-delete:hover { background: #fecaca; }
+
+    /* ─── EMPTY STATE ─── */
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-state h3 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+    .empty-state p { font-size: 0.875rem; }
+
+    /* ─── LOADING ─── */
+    .loading-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid var(--border);
+      border-top-color: var(--brand); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
+    }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem; opacity: 0;
+      pointer-events: none; transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: white; border-radius: 16px; width: 100%; max-width: 520px;
+      max-height: 90vh; overflow-y: auto;
+      transform: scale(0.95); transition: transform 0.2s; box-shadow: var(--shadow-lg);
+    }
+    .modal-overlay.open .modal { transform: scale(1); }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: white; border-radius: 16px 16px 0 0;
+    }
+    .modal-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .modal-close {
+      width: 30px; height: 30px; border: none; background: var(--neutral-light);
+      border-radius: 50%; cursor: pointer; font-size: 16px; display: flex;
+      align-items: center; justify-content: center; color: var(--text-muted);
+    }
+    .modal-close:hover { background: var(--border); }
+    .modal-body { padding: 1.5rem; }
+    .modal-section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-muted); margin: 1.25rem 0 0.75rem;
+    }
+    .modal-section-title:first-of-type { margin-top: 0; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.9rem; }
+    .form-group { margin-bottom: 0.9rem; }
+    .form-group label { display: block; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.35rem; }
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group textarea {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 0.55rem 0.85rem; font-size: 0.875rem; outline: none; transition: border 0.2s;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--brand); }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+    .checkbox-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0.6rem 0.85rem; border: 1.5px solid var(--border);
+      border-radius: 8px; cursor: pointer;
+    }
+    .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--brand); }
+    .checkbox-row label { font-size: 0.875rem; cursor: pointer; font-weight: 500; }
+    .editor-required {
+      background: #fef9c3; border: 1px solid #fde047; border-radius: 8px;
+      padding: 0.75rem 1rem; font-size: 0.82rem; color: #854d0e;
+      margin-bottom: 1rem; display: flex; align-items: flex-start; gap: 8px;
+    }
+    .modal-footer {
+      padding: 1rem 1.5rem; border-top: 1px solid var(--border);
+      display: flex; gap: 8px; justify-content: flex-end;
+      position: sticky; bottom: 0; background: white; border-radius: 0 0 16px 16px;
+    }
+    .btn-cancel {
+      background: white; color: var(--text); border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 0.6rem 1.25rem; font-size: 0.875rem;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-cancel:hover { border-color: var(--text-muted); }
+    .btn-save {
+      background: var(--brand); color: white; border: none;
+      border-radius: 8px; padding: 0.6rem 1.5rem; font-size: 0.875rem;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-save:hover { background: #1648c4; }
+    .btn-save:disabled { background: #93aedd; cursor: not-allowed; }
+
+    /* ─── CONFIRM DIALOG ─── */
+    .confirm-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000; padding: 1rem; display: none;
+    }
+    .confirm-overlay.open { display: flex; }
+    .confirm-card {
+      background: white; border-radius: 12px; padding: 1.5rem;
+      max-width: 380px; width: 100%; box-shadow: var(--shadow-lg);
+    }
+    .confirm-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .confirm-card p { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem; }
+    .confirm-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn-confirm-delete {
+      background: var(--danger); color: white; border: none; border-radius: 8px;
+      padding: 0.6rem 1.25rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    }
+    .btn-confirm-delete:hover { background: #b91c1c; }
+
+    /* ─── TOAST ─── */
+    .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      background: var(--text); color: white; border-radius: 10px;
+      padding: 0.75rem 1.25rem; font-size: 0.875rem; font-weight: 500;
+      box-shadow: var(--shadow-lg); animation: slideIn 0.3s ease;
+      display: flex; align-items: center; gap: 8px; max-width: 320px;
+    }
+    .toast-success { background: var(--ok); }
+    .toast-error { background: var(--danger); }
+    @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ─── AUDIT LOG ─── */
+    .audit-row { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+
+    /* ─── SETTINGS LINK ─── */
+    .settings-link {
+      font-size: 0.8rem; color: var(--text-muted); cursor: pointer;
+      text-decoration: underline; background: none; border: none;
+    }
+    .settings-link:hover { color: var(--brand); }
+
+    @media (max-width: 768px) {
+      .form-row { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .main-content { padding: 1rem; }
+      .table-wrap { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     SETUP SCREEN
+════════════════════════════════════════════ -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="logo">
+      <div class="icon">📋</div>
+      <div>
+        <div style="font-weight:700;font-size:1.1rem;">Onboarding Tracker</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);">Airtable Connection Setup</div>
+      </div>
+    </div>
+    <hr class="setup-divider" />
+
+    <div class="setup-note">
+      <strong>🗄️ Airtable Setup Required</strong>
+      Before connecting, create a table in Airtable named <code>Vendors</code> with these exact fields:
+      <br/><br/>
+      <strong>Field Names (case-sensitive):</strong><br/>
+      • <code>Vendor Name</code> — Single line text (Primary)<br/>
+      • <code>COI Received</code> — Checkbox<br/>
+      • <code>COI Expiration Date</code> — Date<br/>
+      • <code>W9 Received</code> — Checkbox<br/>
+      • <code>W9 Date Received</code> — Date<br/>
+      • <code>Contract Received</code> — Checkbox<br/>
+      • <code>Contract Date Received</code> — Date<br/>
+      • <code>Notes</code> — Long text<br/>
+      • <code>Last Edited By</code> — Single line text<br/>
+      • <code>Last Edited Date</code> — Single line text
+    </div>
+
+    <hr class="setup-divider" />
+
+    <div class="setup-section">
+      <label>Personal Access Token</label>
+      <input type="password" id="setup-token" placeholder="pat••••••••••••••••••••••••••••••••••••••••••••••" />
+      <div class="hint">
+        Create one at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a>
+        with <strong>data.records:read</strong> and <strong>data.records:write</strong> scopes, scoped to your base.
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <label>Base ID</label>
+      <input type="text" id="setup-base" placeholder="appXXXXXXXXXXXXXX" />
+      <div class="hint">Found in your Airtable URL: airtable.com/<strong>appXXXXXXXXXX</strong>/...</div>
+    </div>
+
+    <div class="setup-section">
+      <label>Table Name</label>
+      <input type="text" id="setup-table" placeholder="Vendors" value="Vendors" />
+      <div class="hint">The exact name of your Airtable table (default: Vendors).</div>
+    </div>
+
+    <div class="setup-error" id="setup-error"></div>
+
+    <button class="btn-primary" id="setup-connect-btn" onclick="handleSetupConnect()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Connect to Airtable
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">📋</div>
+      <div class="topbar-title">Vendor Onboarding Tracker</div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-badge" onclick="changeUser()">
+        <div class="dot"></div>
+        <span id="current-user-label">No user set</span>
+        <span style="font-size:10px;color:var(--text-muted)">▾</span>
+      </div>
+      <button class="settings-link" onclick="resetSetup()">⚙ Settings</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Stats -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Vendors</div>
+        <div class="stat-value" id="stat-total">—</div>
+      </div>
+      <div class="stat-card stat-ok">
+        <div class="stat-label">Fully Onboarded</div>
+        <div class="stat-value" id="stat-complete">—</div>
+        <div class="stat-sub">All docs received</div>
+      </div>
+      <div class="stat-card stat-warn">
+        <div class="stat-label">COI Expiring Soon</div>
+        <div class="stat-value" id="stat-expiring">—</div>
+        <div class="stat-sub">Within 60 days</div>
+      </div>
+      <div class="stat-card stat-danger">
+        <div class="stat-label">COI Expired</div>
+        <div class="stat-value" id="stat-expired">—</div>
+        <div class="stat-sub">Action required</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Missing Docs</div>
+        <div class="stat-value" id="stat-missing">—</div>
+        <div class="stat-sub">Pending receipt</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search vendors…" oninput="renderTable()" />
+      </div>
+      <select class="filter-select" id="filter-docs" onchange="renderTable()">
+        <option value="">All vendors</option>
+        <option value="complete">Fully onboarded</option>
+        <option value="incomplete">Missing docs</option>
+        <option value="coi-expired">COI Expired</option>
+        <option value="coi-expiring">COI Expiring Soon</option>
+      </select>
+      <button class="btn-refresh" id="refresh-btn" onclick="loadData()">
+        <svg id="refresh-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+      <button class="btn-add" onclick="openAddModal()">+ Add Vendor</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <div id="table-loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading vendor data…</p>
+      </div>
+      <div id="table-empty" class="empty-state" style="display:none;">
+        <div class="empty-icon">📭</div>
+        <h3>No vendors found</h3>
+        <p>Add your first vendor or adjust your search filters.</p>
+      </div>
+      <table id="main-table" style="display:none;">
+        <thead>
+          <tr>
+            <th>Vendor Name</th>
+            <th>COI</th>
+            <th>COI Expiration</th>
+            <th>W-9</th>
+            <th>Contract</th>
+            <th>Notes</th>
+            <th>Last Edited</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     EDIT/ADD MODAL
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Add Vendor</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Editor required -->
+      <div class="editor-required" id="editor-required-banner">
+        ⚠️ <span>Your name is required to save changes. Please enter it below before submitting.</span>
+      </div>
+
+      <!-- Editor Name -->
+      <div class="form-group">
+        <label>Your Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="field-editor-name" placeholder="Enter your name…" />
+      </div>
+
+      <!-- Vendor Name -->
+      <div class="modal-section-title">Vendor Info</div>
+      <div class="form-group">
+        <label>Vendor / Company Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="field-vendor-name" placeholder="e.g. Acme Corp" />
+      </div>
+
+      <!-- COI -->
+      <div class="modal-section-title">Certificate of Insurance (COI)</div>
+      <div class="form-group">
+        <div class="checkbox-row" onclick="toggleCheck('field-coi-received')">
+          <input type="checkbox" id="field-coi-received" />
+          <label for="field-coi-received">COI Received</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>COI Expiration Date</label>
+        <input type="date" id="field-coi-exp" />
+      </div>
+
+      <!-- W-9 -->
+      <div class="modal-section-title">W-9 / Tax Form</div>
+      <div class="form-group">
+        <div class="checkbox-row" onclick="toggleCheck('field-w9-received')">
+          <input type="checkbox" id="field-w9-received" />
+          <label for="field-w9-received">W-9 Received</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>W-9 Date Received</label>
+        <input type="date" id="field-w9-date" />
+      </div>
+
+      <!-- Contract -->
+      <div class="modal-section-title">Contract / Agreement</div>
+      <div class="form-group">
+        <div class="checkbox-row" onclick="toggleCheck('field-contract-received')">
+          <input type="checkbox" id="field-contract-received" />
+          <label for="field-contract-received">Contract Received</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Contract Date Received</label>
+        <input type="date" id="field-contract-date" />
+      </div>
+
+      <!-- Notes -->
+      <div class="modal-section-title">Notes</div>
+      <div class="form-group">
+        <textarea id="field-notes" placeholder="Any additional notes…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" id="modal-save-btn" onclick="saveRecord()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     CONFIRM DELETE
+════════════════════════════════════════════ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-card">
+    <h3>Delete Vendor?</h3>
+    <p>This will permanently remove this vendor and all their onboarding data from Airtable. This cannot be undone.</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-confirm-delete" id="confirm-delete-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TOAST CONTAINER
+════════════════════════════════════════════ -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ──────────────────────────────────────────────
+// CONFIG & STATE
+// ──────────────────────────────────────────────
+let config = { token: '', baseId: '', tableName: 'Vendors' };
+let allRecords = [];
+let currentEditId = null; // null = new record, string = edit existing
+let currentUser = '';
+let pendingDeleteId = null;
+
+const AIRTABLE_BASE = 'https://api.airtable.com/v0';
+
+// ──────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('ot_config');
+  if (saved) {
+    try {
+      config = JSON.parse(saved);
+      const savedUser = localStorage.getItem('ot_user');
+      if (savedUser) {
+        currentUser = savedUser;
+        document.getElementById('current-user-label').textContent = currentUser;
+      }
+      showApp();
+    } catch(e) {}
+  }
+});
+
+// ──────────────────────────────────────────────
+// SETUP
+// ──────────────────────────────────────────────
+async function handleSetupConnect() {
+  const token = document.getElementById('setup-token').value.trim();
+  const baseId = document.getElementById('setup-base').value.trim();
+  const tableName = document.getElementById('setup-table').value.trim() || 'Vendors';
+  const errEl = document.getElementById('setup-error');
+  const btn = document.getElementById('setup-connect-btn');
+
+  errEl.style.display = 'none';
+
+  if (!token || !baseId) {
+    errEl.textContent = 'Please fill in your Personal Access Token and Base ID.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Connecting…';
+
+  try {
+    const res = await fetch(`${AIRTABLE_BASE}/${baseId}/${encodeURIComponent(tableName)}?maxRecords=1`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+    config = { token, baseId, tableName };
+    localStorage.setItem('ot_config', JSON.stringify(config));
+    showApp();
+  } catch(e) {
+    errEl.textContent = `Connection failed: ${e.message}. Check your token, Base ID, and table name.`;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Connect to Airtable';
+  }
+}
+
+function showApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadData();
+}
+
+function resetSetup() {
+  if (!confirm('This will clear your connection settings. Continue?')) return;
+  localStorage.removeItem('ot_config');
+  localStorage.removeItem('ot_user');
+  location.reload();
+}
+
+// ──────────────────────────────────────────────
+// DATA LOADING
+// ──────────────────────────────────────────────
+async function loadData() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  showLoading(true);
+
+  try {
+    allRecords = await fetchAllRecords();
+    updateStats();
+    renderTable();
+    showLoading(false);
+  } catch(e) {
+    toast('Failed to load data: ' + e.message, 'error');
+    showLoading(false);
+  }
+  btn.classList.remove('spinning');
+}
+
+async function fetchAllRecords() {
+  let records = [];
+  let offset = null;
+
+  do {
+    let url = `${AIRTABLE_BASE}/${config.baseId}/${encodeURIComponent(config.tableName)}?pageSize=100`;
+    if (offset) url += `&offset=${offset}`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${config.token}` }
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    records = records.concat(data.records || []);
+    offset = data.offset;
+  } while (offset);
+
+  return records;
+}
+
+// ──────────────────────────────────────────────
+// STATS
+// ──────────────────────────────────────────────
+function updateStats() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const in60 = new Date(today); in60.setDate(in60.getDate() + 60);
+
+  let complete = 0, expiring = 0, expired = 0, missing = 0;
+
+  allRecords.forEach(r => {
+    const f = r.fields;
+    const hasCOI = f['COI Received'];
+    const hasW9 = f['W9 Received'];
+    const hasContract = f['Contract Received'];
+    const coiExp = f['COI Expiration Date'] ? new Date(f['COI Expiration Date'] + 'T00:00:00') : null;
+
+    if (hasCOI && hasW9 && hasContract) complete++;
+    if (!hasCOI || !hasW9 || !hasContract) missing++;
+    if (coiExp) {
+      if (coiExp < today) expired++;
+      else if (coiExp <= in60) expiring++;
+    }
+  });
+
+  document.getElementById('stat-total').textContent = allRecords.length;
+  document.getElementById('stat-complete').textContent = complete;
+  document.getElementById('stat-expiring').textContent = expiring;
+  document.getElementById('stat-expired').textContent = expired;
+  document.getElementById('stat-missing').textContent = missing;
+}
+
+// ──────────────────────────────────────────────
+// TABLE RENDERING
+// ──────────────────────────────────────────────
+function renderTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const filter = document.getElementById('filter-docs').value;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const in60 = new Date(today); in60.setDate(in60.getDate() + 60);
+
+  let rows = allRecords.filter(r => {
+    const name = (r.fields['Vendor Name'] || '').toLowerCase();
+    if (search && !name.includes(search)) return false;
+
+    const f = r.fields;
+    const coiExp = f['COI Expiration Date'] ? new Date(f['COI Expiration Date'] + 'T00:00:00') : null;
+
+    if (filter === 'complete') return f['COI Received'] && f['W9 Received'] && f['Contract Received'];
+    if (filter === 'incomplete') return !f['COI Received'] || !f['W9 Received'] || !f['Contract Received'];
+    if (filter === 'coi-expired') return coiExp && coiExp < today;
+    if (filter === 'coi-expiring') return coiExp && coiExp >= today && coiExp <= in60;
+    return true;
+  });
+
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+
+  if (rows.length === 0) {
+    document.getElementById('main-table').style.display = 'none';
+    document.getElementById('table-empty').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('main-table').style.display = 'table';
+  document.getElementById('table-empty').style.display = 'none';
+
+  rows.forEach(r => {
+    const f = r.fields;
+    const coiExp = f['COI Expiration Date'] ? new Date(f['COI Expiration Date'] + 'T00:00:00') : null;
+    const coiBadge = buildCOIBadge(f['COI Received'], coiExp, today, in60);
+    const w9Badge = buildDocBadge(f['W9 Received'], f['W9 Date Received']);
+    const contractBadge = buildDocBadge(f['Contract Received'], f['Contract Date Received']);
+    const coiExpStr = coiExp ? formatDate(coiExp) : '—';
+
+    let coiExpClass = '';
+    if (coiExp) {
+      if (coiExp < today) coiExpClass = 'style="color:var(--danger);font-weight:700;"';
+      else if (coiExp <= in60) coiExpClass = 'style="color:var(--warn);font-weight:700;"';
+    }
+
+    const lastEdited = f['Last Edited By'] ? `<div>${escHtml(f['Last Edited By'])}</div><div class="audit-row">${escHtml(f['Last Edited Date'] || '')}</div>` : '<span style="color:var(--text-muted)">—</span>';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="vendor-name">${escHtml(f['Vendor Name'] || '(unnamed)')}</div></td>
+      <td>${coiBadge}</td>
+      <td><span ${coiExpClass}>${coiExpStr}</span></td>
+      <td>${w9Badge}</td>
+      <td>${contractBadge}</td>
+      <td style="max-width:180px;"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem;color:var(--text-muted);">${escHtml(f['Notes'] || '')}</div></td>
+      <td>${lastEdited}</td>
+      <td>
+        <button class="btn-edit" onclick="openEditModal('${r.id}')">Edit</button>
+        <button class="btn-delete" onclick="confirmDelete('${r.id}')">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function buildCOIBadge(received, expDate, today, in60) {
+  if (!received) return `<span class="badge badge-missing">✗ Not Received</span>`;
+  if (!expDate) return `<span class="badge badge-ok">✔ Received</span>`;
+  if (expDate < today) return `<span class="badge badge-danger">⚠ Expired</span>`;
+  if (expDate <= in60) return `<span class="badge badge-warn">⏰ Expiring Soon</span>`;
+  return `<span class="badge badge-ok">✔ Active</span>`;
+}
+
+function buildDocBadge(received, dateReceived) {
+  if (!received) return `<span class="badge badge-missing">✗ Not Received</span>`;
+  return `<span class="badge badge-ok">✔ Received</span>`;
+}
+
+function showLoading(show) {
+  document.getElementById('table-loading').style.display = show ? 'block' : 'none';
+  document.getElementById('main-table').style.display = show ? 'none' : 'table';
+  if (show) document.getElementById('table-empty').style.display = 'none';
+}
+
+// ──────────────────────────────────────────────
+// MODAL
+// ──────────────────────────────────────────────
+function openAddModal() {
+  currentEditId = null;
+  document.getElementById('modal-title').textContent = 'Add Vendor';
+  clearModal();
+  prefillEditorName();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function openEditModal(recordId) {
+  const record = allRecords.find(r => r.id === recordId);
+  if (!record) return;
+  currentEditId = recordId;
+
+  document.getElementById('modal-title').textContent = 'Edit Vendor';
+  clearModal();
+  prefillEditorName();
+
+  const f = record.fields;
+  document.getElementById('field-vendor-name').value = f['Vendor Name'] || '';
+  document.getElementById('field-coi-received').checked = !!f['COI Received'];
+  document.getElementById('field-coi-exp').value = f['COI Expiration Date'] || '';
+  document.getElementById('field-w9-received').checked = !!f['W9 Received'];
+  document.getElementById('field-w9-date').value = f['W9 Date Received'] || '';
+  document.getElementById('field-contract-received').checked = !!f['Contract Received'];
+  document.getElementById('field-contract-date').value = f['Contract Date Received'] || '';
+  document.getElementById('field-notes').value = f['Notes'] || '';
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function prefillEditorName() {
+  if (currentUser) {
+    document.getElementById('field-editor-name').value = currentUser;
+    document.getElementById('editor-required-banner').style.display = 'none';
+  } else {
+    document.getElementById('editor-required-banner').style.display = 'flex';
+  }
+}
+
+function clearModal() {
+  ['field-vendor-name','field-coi-exp','field-w9-date','field-contract-date','field-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['field-coi-received','field-w9-received','field-contract-received'].forEach(id => {
+    document.getElementById(id).checked = false;
+  });
+  document.getElementById('field-editor-name').value = currentUser || '';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  currentEditId = null;
+}
+
+function toggleCheck(id) {
+  const el = document.getElementById(id);
+  el.checked = !el.checked;
+}
+
+async function saveRecord() {
+  const editorName = document.getElementById('field-editor-name').value.trim();
+  const vendorName = document.getElementById('field-vendor-name').value.trim();
+
+  if (!editorName) {
+    toast('Please enter your name before saving.', 'error');
+    document.getElementById('field-editor-name').focus();
+    return;
+  }
+  if (!vendorName) {
+    toast('Vendor name is required.', 'error');
+    document.getElementById('field-vendor-name').focus();
+    return;
+  }
+
+  // Remember editor for this session
+  currentUser = editorName;
+  localStorage.setItem('ot_user', editorName);
+  document.getElementById('current-user-label').textContent = editorName;
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  const fields = {
+    'Vendor Name': vendorName,
+    'COI Received': document.getElementById('field-coi-received').checked,
+    'W9 Received': document.getElementById('field-w9-received').checked,
+    'Contract Received': document.getElementById('field-contract-received').checked,
+    'Notes': document.getElementById('field-notes').value.trim(),
+    'Last Edited By': editorName,
+    'Last Edited Date': dateStr
+  };
+
+  const coiExp = document.getElementById('field-coi-exp').value;
+  if (coiExp) fields['COI Expiration Date'] = coiExp;
+
+  const w9Date = document.getElementById('field-w9-date').value;
+  if (w9Date) fields['W9 Date Received'] = w9Date;
+
+  const contractDate = document.getElementById('field-contract-date').value;
+  if (contractDate) fields['Contract Date Received'] = contractDate;
+
+  const btn = document.getElementById('modal-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    let url = `${AIRTABLE_BASE}/${config.baseId}/${encodeURIComponent(config.tableName)}`;
+    let method = 'POST';
+    let body = { fields };
+
+    if (currentEditId) {
+      url += `/${currentEditId}`;
+      method = 'PATCH';
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    closeModal();
+    toast(currentEditId ? 'Vendor updated successfully!' : 'Vendor added successfully!', 'success');
+    await loadData();
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Save';
+}
+
+// ──────────────────────────────────────────────
+// DELETE
+// ──────────────────────────────────────────────
+function confirmDelete(recordId) {
+  pendingDeleteId = recordId;
+  document.getElementById('confirm-overlay').classList.add('open');
+  document.getElementById('confirm-delete-btn').onclick = () => deleteRecord(recordId);
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  pendingDeleteId = null;
+}
+
+async function deleteRecord(recordId) {
+  closeConfirm();
+  try {
+    const res = await fetch(
+      `${AIRTABLE_BASE}/${config.baseId}/${encodeURIComponent(config.tableName)}/${recordId}`,
+      { method: 'DELETE', headers: { Authorization: `Bearer ${config.token}` } }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    toast('Vendor deleted.', 'success');
+    await loadData();
+  } catch(e) {
+    toast('Delete failed: ' + e.message, 'error');
+  }
+}
+
+// ──────────────────────────────────────────────
+// USER
+// ──────────────────────────────────────────────
+function changeUser() {
+  const name = prompt('Enter your name:', currentUser);
+  if (name === null) return;
+  currentUser = name.trim();
+  localStorage.setItem('ot_user', currentUser);
+  document.getElementById('current-user-label').textContent = currentUser || 'No user set';
+}
+
+// ──────────────────────────────────────────────
+// TOAST
+// ──────────────────────────────────────────────
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = `toast ${type ? 'toast-' + type : ''}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ──────────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+}
+
+// Close modal on overlay click
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
